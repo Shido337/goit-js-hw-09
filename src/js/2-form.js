@@ -1,31 +1,70 @@
-let formData = {email: '', message: ''};
-
-const form = document.querySelector('.feedback-form');
 const STORAGE_KEY = 'feedback-form-state';
 
-const savedData = localStorage.getItem(STORAGE_KEY);
-if (savedData) {
-  formData = JSON.parse(savedData);
-  form.elements.email.value = formData.email;
-  form.elements.message.value = formData.message;
+const form = document.querySelector('.feedback-form');
+
+// Об'єкт, як в ТЗ: поза всіма функціями
+const formData = {
+  email: '',
+  message: '',
+};
+
+// Відновлюємо форму при завантаженні сторінки
+loadFormData();
+
+// Делегування: слухаємо всю форму
+form.addEventListener('input', onFormInput);
+form.addEventListener('submit', onFormSubmit);
+
+function onFormInput(event) {
+  const { name, value } = event.target;
+
+  // Якщо раптом в формі буде щось зайве – ігноруємо
+  if (!(name in formData)) return;
+
+  // Зберігаємо обрізане значення в об'єкт
+  formData[name] = value.trim();
+
+  // Пишемо в localStorage
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
 }
 
-form.addEventListener('input' , event => {
-    formData[event.target.name] = event.target.value.trim()
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
-})
+function loadFormData() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (!saved) return;
 
-form.addEventListener('submit', event => {
-    event.preventDefault();
-    
-    if(!formData.email || !formData.message) {
-        alert('Fill please all fields!');
-        return;
-    }
+  try {
+    const parsed = JSON.parse(saved);
 
-    console.log(formData);
+    formData.email = parsed.email ?? '';
+    formData.message = parsed.message ?? '';
 
-    localStorage.removeItem(STORAGE_KEY);
-    formData = {email: '', message: ''};
-    form.reset();
-})
+    form.elements.email.value = formData.email;
+    form.elements.message.value = formData.message;
+  } catch (error) {
+    console.error('Error parsing saved form data:', error);
+  }
+}
+
+function onFormSubmit(event) {
+  event.preventDefault();
+
+  const email = form.elements.email.value.trim();
+  const message = form.elements.message.value.trim();
+
+  formData.email = email;
+  formData.message = message;
+
+  if (!email || !message) {
+    alert('Fill please all fields');
+    return;
+  }
+
+  console.log(formData);
+
+  localStorage.removeItem(STORAGE_KEY);
+
+  formData.email = '';
+  formData.message = '';
+
+  form.reset();
+}
